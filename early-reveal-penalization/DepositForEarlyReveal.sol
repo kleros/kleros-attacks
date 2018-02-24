@@ -19,7 +19,7 @@
  * If it does, it accepts value.
  *
  * Before the reveal phase anyone can submit the (value,salt) of another party to penalize it.
- * This way parties are incentivized to not reveal their (value,salt) (they can reveal value, but there no reason to believe a party which just revealed value).
+ * This way parties are incentivized not to reveal their (value,salt) (they can reveal value, but there no reason to believe a party which just revealed value).
  *
  *
  * To attack this scheme and let other parties know value, the attacker submits (hashedValue,value) and pays a deposit d while creating this contract.
