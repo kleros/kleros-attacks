@@ -1,0 +1,29 @@
+{
+  "name": "kleros-attacks",
+  "version": "1.0.0",
+  "description": "Attacks on Kleros or Kleros old versions.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kleros/kleros-attacks.git"
+  },
+  "keywords": [
+    "attack",
+    "kleros"
+  ],
+  "author": "Clément Lesaege",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kleros/kleros-attacks/issues"
+  },
+  "homepage": "https://github.com/kleros/kleros-attacks#readme",
+  "dependencies": {
+    "kleros-interaction": "0.0.17"
+  }
+}
