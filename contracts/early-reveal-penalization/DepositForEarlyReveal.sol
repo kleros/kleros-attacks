@@ -44,8 +44,8 @@ contract DepositForEarlyReveal {
         attacker=msg.sender;
     }
     
-    /** @dev Give back the deposit to the attacker
-     *
+    /** @dev Give back the deposit to the attacker.
+     *  @param _salt The random salt which was used.
      */
     function showCorrect(uint _salt) public {
         require(keccak256(promise,_salt)==hashedValue);
