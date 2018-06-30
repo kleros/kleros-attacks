@@ -3,6 +3,10 @@
  * @author Clément Lesaege - <clement@lesaege.com>
  *  
  * This code implements the Cut and choose against early reveal penalization attack (https://docs.google.com/document/d/1KVUrjxUkVT01ekQHhDeILr5unJdHP-UFl_dkki-xCmE/).
+ * Assuming we have a random beacon, this attack is more capital efficient than the simple deposit one because:
+ * -The average cost of convincing external observers (trusting this prerevelation protocol) that the attacker made a vote different to the one he actually made is n*d.
+ *  Where n is the ammount the amount of hashed values (which is only limited by gas cost) and d the deposit. While in the simple deposit attack this cost is only d.
+ * -The capital used for the attack can be withdrawn just after the random beacon returns a number. While in the simple deposit attack, the capital is locked up until the votes are revealed.
  */
 pragma solidity ^0.4.15;
 
