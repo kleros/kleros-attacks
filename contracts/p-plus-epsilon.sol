@@ -18,26 +18,31 @@ contract PPlusEplsilonKleros {
   uint public desiredOutcome;
   uint public epsilon;
   bool public settled;
-  mapping (address => uint) public withdraw; // We'll use a withdraw pattern here to avoid multiple sends when a juror has voted multiple times
+  mapping (address => uint) public withdraw; // We'll use a withdraw pattern here to avoid multiple sends when a juror has voted multiple times.
 
   address public attacker;
   uint public remainingWithdraw; // Here we keep the total amount bribed jurors have available for withdraw.
 
   modifier onlyBy(address _account) {require(msg.sender == _account); _;}
 
+  /** @dev Constructor.
+   *  @param _pinakion The PNK contract.
+   *  @param _kleros   The Kleros court.
+   *  @param _disputeID The dispute we are targeting.
+   *  @param _desiredOutcome The desired ruling of the dispute.
+   *  @param _epsilon  Jurors will be paid epsilon more for voting for the desiredOutcome.
+   */
   function constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon) {
-    attacker = msg.sender;
+    pinakion = _pinakion;
     court = _kleros;
     disputeID = _disputeID;
-    epsilon = _epsilon;
     desiredOutcome = _desiredOutcome;
-    pinakion = _pinakion;
+    epsilon = _epsilon;
+    attacker = msg.sender;
   }
 
   /** @dev Callback of approveAndCall - transfer pinakions in the contract. Should be called by the pinakion contract. TRUSTED.
-   *
    *  The attacker has to deposit sufficiently large amount of PNK to cover the payouts to the jurors.
-   *
    *  @param _from The address making the transfer.
    *  @param _amount Amount of tokens to transfer to this contract (in basic units).
    */
@@ -50,12 +55,22 @@ contract PPlusEplsilonKleros {
   /** @dev Jurors can withdraw their PNK from here
    */
   function withdraw() {
-    require(withdraw[msg.sender] > 0);
     uint amount = withdraw[msg.sender];
     withdraw[msg.sender] = 0;
 
+    balance = sub(balance, amount); // Could underflow
+    remainingWithdraw = sub(remainingWithdraw, amount);
+
     // The juror receives d + p + e (deposit + p + epsilon)
     require(pinakion.transfer(msg.sender, amount));
+  }
+
+  /**
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 _a, uint256 _b) internal pure returns (uint256) {
+    assert(_b <= _a);
+    return _a - _b;
   }
 
   /** @dev The attacker can withdraw their PNK from here after the bribe has been settled.
@@ -64,8 +79,11 @@ contract PPlusEplsilonKleros {
     require(settled);
 
     if (balance > remainingWithdraw) {
-      // The attacker can withdraw the remaning balance of PNK after the contract has been settled.
-      require(pinakion.transfer(attacker, balance - remainingWithdraw));
+      // The remaning balance of PNK after settlement is transfered to the attacker.
+      uint amount = balance - remainingWithdraw;
+      balance = remainingWithdraw;
+
+      require(pinakion.transfer(attacker, amount));
     }
   }
 
