@@ -3,13 +3,13 @@ pragma solidity ^0.4.24;
 import "kleros/contracts/Kleros.sol";
 import {MiniMeTokenERC20 as Pinakion} from "kleros-interaction/contracts/standard/arbitration/ArbitrableTokens/MiniMeTokenERC20.sol";
 
-/** @title PPlusEplsilonKleros
+/** @title PEpsilon
  *  @author Daniel Babbev
  *
- *  This contract implements a p + epsilon attack against the Kleros court,
- *  as described by VitaliK Buterin here: https://blog.ethereum.org/2015/01/28/p-epsilon-attack/
+ *  This contract implements a p + epsilon attack against the Kleros court.
+ *  The attack is described by VitaliK Buterin here: https://blog.ethereum.org/2015/01/28/p-epsilon-attack/
  */
-contract PEplsilon {
+contract PEpsilon {
   Pinakion public pinakion;
   Kleros public court;
 
