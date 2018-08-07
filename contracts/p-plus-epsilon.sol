@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./Kleros.sol";
+import "kleros/contracts/Kleros.sol";
 import {MiniMeTokenERC20 as Pinakion} from "kleros-interaction/contracts/standard/arbitration/ArbitrableTokens/MiniMeTokenERC20.sol";
 
 /** @title PPlusEplsilonKleros
