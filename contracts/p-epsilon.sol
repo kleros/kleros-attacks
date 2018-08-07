@@ -9,7 +9,7 @@ import {MiniMeTokenERC20 as Pinakion} from "kleros-interaction/contracts/standar
  *  This contract implements a p + epsilon attack against the Kleros court,
  *  as described by VitaliK Buterin here: https://blog.ethereum.org/2015/01/28/p-epsilon-attack/
  */
-contract PPlusEplsilonKleros {
+contract PEplsilon {
   Pinakion public pinakion;
   Kleros public court;
 
