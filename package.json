@@ -24,7 +24,8 @@
   },
   "homepage": "https://github.com/kleros/kleros-attacks#readme",
   "dependencies": {
-    "kleros-interaction": "0.0.17",
+    "kleros-interaction": "^0.0.15",
+    "minimetoken": "^0.2.0",
     "kleros": "0.0.7"
   }
 }

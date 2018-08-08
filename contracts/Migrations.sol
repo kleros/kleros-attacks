@@ -1,5 +1,9 @@
 pragma solidity ^0.4.23;
 
+import "kleros-interaction/contracts/standard/rng/ConstantNG.sol";
+import "kleros/contracts/POC/KlerosPOC.sol";
+import "kleros-interaction/contracts/standard/arbitration/ArbitrableTransaction.sol";
+
 contract Migrations {
   address public owner;
   uint public last_completed_migration;
