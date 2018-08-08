@@ -25,6 +25,9 @@ contract PEpsilon {
 
   modifier onlyBy(address _account) {require(msg.sender == _account); _;}
 
+  event Log(uint val, string msg);
+  event AmountShift(uint val, address juror);
+
   /** @dev Constructor.
    *  @param _pinakion The PNK contract.
    *  @param _kleros   The Kleros court.
@@ -32,7 +35,7 @@ contract PEpsilon {
    *  @param _desiredOutcome The desired ruling of the dispute.
    *  @param _epsilon  Jurors will be paid epsilon more for voting for the desiredOutcome.
    */
-  function constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon) {
+  constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon) public {
     pinakion = _pinakion;
     court = _kleros;
     disputeID = _disputeID;
@@ -54,7 +57,7 @@ contract PEpsilon {
 
   /** @dev Jurors can withdraw their PNK from here
    */
-  function withdraw() {
+  function withdrawJuror() {
     uint amount = withdraw[msg.sender];
     withdraw[msg.sender] = 0;
 
@@ -108,17 +111,19 @@ contract PEpsilon {
       uint winningChoice = court.getWinningChoice(disputeID, appeals);
 
       // Rewards are calculated as per the one shot token reparation.
-      for (uint i=0; i < appeals; i++){ // Loop each appeal and each vote.
+      for (uint i=0; i <= appeals; i++){ // Loop each appeal and each vote.
 
         // Note that we don't check if the result was a tie becuse we are getting a funny compiler error: "stack is too deep" if we check.
         // TODO: Account for ties
         if (winningChoice != 0){
-          // votesLen is the lenght of the votes per each appeal. There is no getter function for that, so we have to calculate it here.
+          // votesLen is the length of the votes per each appeal. There is no getter function for that, so we have to calculate it here.
           // We must end up with the exact same value as if we would have called dispute.votes[i].length
           uint votesLen = 0;
-          for (uint c = 0; c < choices; c++) { // Iterate for each choice of the dispute.
+          for (uint c = 0; c <= choices; c++) { // Iterate for each choice of the dispute.
             votesLen += court.getVoteCount(disputeID, i, c);
           }
+
+          emit Log(amountShift, "stakePerDraw");
 
           uint totalToRedistribute = 0;
           uint nbCoherent = 0;
@@ -135,6 +140,7 @@ contract PEpsilon {
                 // Transfer this juror back the penalty.
                 withdraw[voteAccount] += amountShift;
                 remainingWithdraw += amountShift;
+                emit AmountShift(amountShift, voteAccount);
               }
             } else {
               nbCoherent++;
@@ -153,6 +159,8 @@ contract PEpsilon {
                 // Add the coherent juror reward + epsilon to the total payout.
                 withdraw[voteAccount] += toRedistribute + epsilon;
                 remainingWithdraw += toRedistribute + epsilon;
+                emit AmountShift(toRedistribute, voteAccount);
+                emit Log(epsilon, "epsilon awarded");
               }
             }
           }
