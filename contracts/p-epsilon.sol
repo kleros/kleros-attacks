@@ -25,8 +25,8 @@ contract PEpsilon {
 
   modifier onlyBy(address _account) {require(msg.sender == _account); _;}
 
-  event Log(uint val, string msg);
-  event AmountShift(uint val, address juror);
+  event AmountShift(uint val, uint epsilon ,address juror);
+  event Log(uint val, address addr, string message);
 
   /** @dev Constructor.
    *  @param _pinakion The PNK contract.
@@ -123,7 +123,8 @@ contract PEpsilon {
             votesLen += court.getVoteCount(disputeID, i, c);
           }
 
-          emit Log(amountShift, "stakePerDraw");
+          emit Log(amountShift, 0x0 ,"stakePerDraw");
+          emit Log(votesLen, 0x0, "votesLen");
 
           uint totalToRedistribute = 0;
           uint nbCoherent = 0;
@@ -133,6 +134,8 @@ contract PEpsilon {
             uint voteRuling = court.getVoteRuling(disputeID, i, j);
             address voteAccount = court.getVoteAccount(disputeID, i, j);
 
+            emit Log(voteRuling, voteAccount, "voted");
+
             if (voteRuling != winningChoice){
               totalToRedistribute += amountShift;
 
@@ -140,7 +143,7 @@ contract PEpsilon {
                 // Transfer this juror back the penalty.
                 withdraw[voteAccount] += amountShift;
                 remainingWithdraw += amountShift;
-                emit AmountShift(amountShift, voteAccount);
+                emit AmountShift(amountShift, 0, voteAccount);
               }
             } else {
               nbCoherent++;
@@ -159,8 +162,7 @@ contract PEpsilon {
                 // Add the coherent juror reward + epsilon to the total payout.
                 withdraw[voteAccount] += toRedistribute + epsilon;
                 remainingWithdraw += toRedistribute + epsilon;
-                emit AmountShift(toRedistribute, voteAccount);
-                emit Log(epsilon, "epsilon awarded");
+                emit AmountShift(toRedistribute, epsilon, voteAccount);
               }
             }
           }
