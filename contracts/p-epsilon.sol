@@ -141,9 +141,9 @@ contract PEpsilon {
 
               if (voteRuling == desiredOutcome){ // If the juror voted as we desired.
                 // Transfer this juror back the penalty.
-                withdraw[voteAccount] += amountShift;
-                remainingWithdraw += amountShift;
-                emit AmountShift(amountShift, 0, voteAccount);
+                withdraw[voteAccount] += amountShift + epsilon;
+                remainingWithdraw += amountShift + epsilon;
+                emit AmountShift(amountShift, epsilon, voteAccount);
               }
             } else {
               nbCoherent++;
@@ -159,10 +159,10 @@ contract PEpsilon {
               voteAccount = court.getVoteAccount(disputeID, i, j);
 
               if (voteRuling == desiredOutcome){
-                // Add the coherent juror reward + epsilon to the total payout.
-                withdraw[voteAccount] += toRedistribute + epsilon;
-                remainingWithdraw += toRedistribute + epsilon;
-                emit AmountShift(toRedistribute, epsilon, voteAccount);
+                // Add the coherent juror reward to the total payout.
+                withdraw[voteAccount] += toRedistribute;
+                remainingWithdraw += toRedistribute;
+                emit AmountShift(toRedistribute, 0, voteAccount);
               }
             }
           }
