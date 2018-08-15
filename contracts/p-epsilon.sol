@@ -18,6 +18,7 @@ contract PEpsilon {
   uint public desiredOutcome;
   uint public epsilon;
   bool public settled;
+  uint public maxAppeals; // The maximum number of appeals this cotracts promises to pay
   mapping (address => uint) public withdraw; // We'll use a withdraw pattern here to avoid multiple sends when a juror has voted multiple times.
 
   address public attacker;
@@ -34,14 +35,16 @@ contract PEpsilon {
    *  @param _disputeID The dispute we are targeting.
    *  @param _desiredOutcome The desired ruling of the dispute.
    *  @param _epsilon  Jurors will be paid epsilon more for voting for the desiredOutcome.
+   *  @param _maxAppeals The maximum number of appeals this contract promises to pay out
    */
-  constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon) public {
+  constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon, uint _maxAppeals) public {
     pinakion = _pinakion;
     court = _kleros;
     disputeID = _disputeID;
     desiredOutcome = _desiredOutcome;
     epsilon = _epsilon;
     attacker = msg.sender;
+    maxAppeals = _maxAppeals;
   }
 
   /** @dev Callback of approveAndCall - transfer pinakions in the contract. Should be called by the pinakion contract. TRUSTED.
@@ -104,6 +107,8 @@ contract PEpsilon {
 
     // From the dispute we get the # of appeals and available choices
     var (, , appeals, choices, , , ,) = court.disputes(disputeID);
+
+    appeals = appeals > maxAppeals ? maxAppeals : appeals;
 
     if (court.currentRuling(disputeID) != desiredOutcome){
       // Calculate the redistribution amounts.

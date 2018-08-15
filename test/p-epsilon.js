@@ -23,11 +23,12 @@ contract('PEpsilon', async (accounts) => {
     let pinakion = await Pinakion.new(0x0, 0x0, 0, 'Pinakion', 18, 'PNK', true, {from: creator})
     let rng = await ConstantRandom.new(10, {from: creator})
     let klerosPOC = await KlerosPOC.new(pinakion.address, rng.address, [2, 4, 8, 2, 5], governor, {from: creator})
-    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, 0, 0, {from: attacker})
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, 0, 0, 5,{from: attacker})
 
     assert.equal(await pEpsilon.pinakion(), pinakion.address, "The pnk address is wrong")
     assert.equal(await pEpsilon.court(), klerosPOC.address, "The klerosPOC address is wrong")
     assert.equal(await pEpsilon.attacker(), attacker, "The attacker address is wrong")
+    assert.equal(await pEpsilon.maxAppeals(), 5, "The appeals are not set correctly")
   })
 
   it("should deposit PNK to the bribe contract", async () => {
@@ -35,7 +36,7 @@ contract('PEpsilon', async (accounts) => {
     let rng = await ConstantRandom.new(10, {from: creator})
     let klerosPOC = await KlerosPOC.new(pinakion.address, rng.address, [2, 4, 8, 2, 5], governor, {from: creator})
     await pinakion.changeController(klerosPOC.address, {from: creator})
-    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, 0, 0, {from: attacker})
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, 0, 0, 0,{from: attacker})
 
     await klerosPOC.buyPinakion({from: attacker, value: 1e18})
     await klerosPOC.withdraw(1e18, {from: attacker})
@@ -76,7 +77,7 @@ contract('PEpsilon', async (accounts) => {
     }
 
     let epsilon = 1e9
-    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, {from: attacker})
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5, {from: attacker})
 
     await klerosPOC.voteRuling(0, 1, drawA, {from: jurorA})
     await klerosPOC.voteRuling(0, 2, drawB, {from: jurorB})
@@ -124,7 +125,7 @@ contract('PEpsilon', async (accounts) => {
       }
 
       let epsilon = 1e9
-      let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, {from: attacker})
+      let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5,{from: attacker})
 
       // Attacker deposits the bribe
       await pinakion.approveAndCall(pEpsilon.address, 2e18, '', {from: attacker})
@@ -218,7 +219,7 @@ contract('PEpsilon', async (accounts) => {
       }
 
       let epsilon = 1000000
-      let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, {from: attacker})
+      let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5, {from: attacker})
 
 
       await klerosPOC.voteRuling(0, 1, drawAAppeal, {from: jurorA})
@@ -301,7 +302,7 @@ contract('PEpsilon', async (accounts) => {
     }
 
     let epsilon = 1e9
-    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, {from: attacker})
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5, {from: attacker})
 
     // Attacker deposits the bribe
     await pinakion.approveAndCall(pEpsilon.address, 2e18, '', {from: attacker})
@@ -366,7 +367,7 @@ contract('PEpsilon', async (accounts) => {
     }
 
     let epsilon = 1e9
-    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, {from: attacker})
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5, {from: attacker})
 
     // Attacker deposits the bribe
     await pinakion.approveAndCall(pEpsilon.address, 2e18, '', {from: attacker})
