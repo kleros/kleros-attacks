@@ -151,7 +151,7 @@ contract PEpsilon {
           }
           if (nbCoherent > 0){
             // toRedistribute is the amount each juror received when he voted coherently.
-            uint toRedistribute = totalToRedistribute / nbCoherent;
+            uint toRedistribute = (totalToRedistribute - amountShift) / (nbCoherent + 1);
 
             // We use votesLen again as a substitute for dispute.votes[i].length
             for (j = 0; j < votesLen; j++){
