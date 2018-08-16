@@ -100,15 +100,13 @@ contract PEpsilon {
    *    The jurors don't receive anything from this contract.
    */
   function settle() public {
-    require(court.disputeStatus(disputeID) ==  Arbitrator.DisputeStatus.Solved);
+    require(court.disputeStatus(disputeID) ==  Arbitrator.DisputeStatus.Solved); // The case must be solved.
     require(!settled); // This function can be executed only once.
 
     settled = true; // settle the bribe
 
-    // From the dispute we get the # of appeals and available choices
+    // From the dispute we get the # of appeals and the available choices
     var (, , appeals, choices, , , ,) = court.disputes(disputeID);
-
-    appeals = appeals > maxAppeals ? maxAppeals : appeals;
 
     if (court.currentRuling(disputeID) != desiredOutcome){
       // Calculate the redistribution amounts.
@@ -116,7 +114,7 @@ contract PEpsilon {
       uint winningChoice = court.getWinningChoice(disputeID, appeals);
 
       // Rewards are calculated as per the one shot token reparation.
-      for (uint i=0; i <= appeals; i++){ // Loop each appeal and each vote.
+      for (uint i=0; i <= (appeals > maxAppeals ? maxAppeals : appeals); i++){ // Loop each appeal and each vote.
 
         // Note that we don't check if the result was a tie becuse we are getting a funny compiler error: "stack is too deep" if we check.
         // TODO: Account for ties
@@ -154,21 +152,19 @@ contract PEpsilon {
               nbCoherent++;
             }
           }
-          if (nbCoherent > 0){
-            // toRedistribute is the amount each juror received when he voted coherently.
-            uint toRedistribute = (totalToRedistribute - amountShift) / (nbCoherent + 1);
+          // toRedistribute is the amount each juror received when he voted coherently.
+          uint toRedistribute = (totalToRedistribute - amountShift) / (nbCoherent + 1);
 
-            // We use votesLen again as a substitute for dispute.votes[i].length
-            for (j = 0; j < votesLen; j++){
-              voteRuling = court.getVoteRuling(disputeID, i, j);
-              voteAccount = court.getVoteAccount(disputeID, i, j);
+          // We use votesLen again as a substitute for dispute.votes[i].length
+          for (j = 0; j < votesLen; j++){
+            voteRuling = court.getVoteRuling(disputeID, i, j);
+            voteAccount = court.getVoteAccount(disputeID, i, j);
 
-              if (voteRuling == desiredOutcome){
-                // Add the coherent juror reward to the total payout.
-                withdraw[voteAccount] += toRedistribute;
-                remainingWithdraw += toRedistribute;
-                emit AmountShift(toRedistribute, 0, voteAccount);
-              }
+            if (voteRuling == desiredOutcome){
+              // Add the coherent juror reward to the total payout.
+              withdraw[voteAccount] += toRedistribute;
+              remainingWithdraw += toRedistribute;
+              emit AmountShift(toRedistribute, 0, voteAccount);
             }
           }
         }
