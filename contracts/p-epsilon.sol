@@ -18,6 +18,7 @@ contract PEpsilon {
   uint public desiredOutcome;
   uint public epsilon;
   bool public settled;
+  uint public maxAppeals; // The maximum number of appeals this cotracts promises to pay
   mapping (address => uint) public withdraw; // We'll use a withdraw pattern here to avoid multiple sends when a juror has voted multiple times.
 
   address public attacker;
@@ -34,14 +35,16 @@ contract PEpsilon {
    *  @param _disputeID The dispute we are targeting.
    *  @param _desiredOutcome The desired ruling of the dispute.
    *  @param _epsilon  Jurors will be paid epsilon more for voting for the desiredOutcome.
+   *  @param _maxAppeals The maximum number of appeals this contract promises to pay out
    */
-  constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon) public {
+  constructor(Pinakion _pinakion, Kleros _kleros, uint _disputeID, uint _desiredOutcome, uint _epsilon, uint _maxAppeals) public {
     pinakion = _pinakion;
     court = _kleros;
     disputeID = _disputeID;
     desiredOutcome = _desiredOutcome;
     epsilon = _epsilon;
     attacker = msg.sender;
+    maxAppeals = _maxAppeals;
   }
 
   /** @dev Callback of approveAndCall - transfer pinakions in the contract. Should be called by the pinakion contract. TRUSTED.
@@ -97,12 +100,12 @@ contract PEpsilon {
    *    The jurors don't receive anything from this contract.
    */
   function settle() public {
-    require(court.disputeStatus(disputeID) ==  Arbitrator.DisputeStatus.Solved);
+    require(court.disputeStatus(disputeID) ==  Arbitrator.DisputeStatus.Solved); // The case must be solved.
     require(!settled); // This function can be executed only once.
 
     settled = true; // settle the bribe
 
-    // From the dispute we get the # of appeals and available choices
+    // From the dispute we get the # of appeals and the available choices
     var (, , appeals, choices, , , ,) = court.disputes(disputeID);
 
     if (court.currentRuling(disputeID) != desiredOutcome){
@@ -111,7 +114,7 @@ contract PEpsilon {
       uint winningChoice = court.getWinningChoice(disputeID, appeals);
 
       // Rewards are calculated as per the one shot token reparation.
-      for (uint i=0; i <= appeals; i++){ // Loop each appeal and each vote.
+      for (uint i=0; i <= (appeals > maxAppeals ? maxAppeals : appeals); i++){ // Loop each appeal and each vote.
 
         // Note that we don't check if the result was a tie becuse we are getting a funny compiler error: "stack is too deep" if we check.
         // TODO: Account for ties
@@ -149,21 +152,19 @@ contract PEpsilon {
               nbCoherent++;
             }
           }
-          if (nbCoherent > 0){
-            // toRedistribute is the amount each juror received when he voted coherently.
-            uint toRedistribute = totalToRedistribute / nbCoherent;
+          // toRedistribute is the amount each juror received when he voted coherently.
+          uint toRedistribute = (totalToRedistribute - amountShift) / (nbCoherent + 1);
 
-            // We use votesLen again as a substitute for dispute.votes[i].length
-            for (j = 0; j < votesLen; j++){
-              voteRuling = court.getVoteRuling(disputeID, i, j);
-              voteAccount = court.getVoteAccount(disputeID, i, j);
+          // We use votesLen again as a substitute for dispute.votes[i].length
+          for (j = 0; j < votesLen; j++){
+            voteRuling = court.getVoteRuling(disputeID, i, j);
+            voteAccount = court.getVoteAccount(disputeID, i, j);
 
-              if (voteRuling == desiredOutcome){
-                // Add the coherent juror reward to the total payout.
-                withdraw[voteAccount] += toRedistribute;
-                remainingWithdraw += toRedistribute;
-                emit AmountShift(toRedistribute, 0, voteAccount);
-              }
+            if (voteRuling == desiredOutcome){
+              // Add the coherent juror reward to the total payout.
+              withdraw[voteAccount] += toRedistribute;
+              remainingWithdraw += toRedistribute;
+              emit AmountShift(toRedistribute, 0, voteAccount);
             }
           }
         }
