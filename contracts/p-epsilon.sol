@@ -64,15 +64,18 @@ contract PEpsilon {
     withdrawSelect(msg.sender);
   }
 
-  function withdrawSelect(address juror) {
-    uint amount = withdraw[juror];
-    withdraw[juror] = 0;
+  /** @dev Withdraw the funds of a given juror
+   *  @param _juror The address of the juror
+   */
+  function withdrawSelect(address _juror) {
+    uint amount = withdraw[_juror];
+    withdraw[_juror] = 0;
 
     balance = sub(balance, amount); // Could underflow
     remainingWithdraw = sub(remainingWithdraw, amount);
 
     // The juror receives d + p + e (deposit + p + epsilon)
-    require(pinakion.transfer(juror, amount));
+    require(pinakion.transfer(_juror, amount));
   }
 
   /**
