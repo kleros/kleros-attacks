@@ -321,12 +321,83 @@ contract('PEpsilon', async (accounts) => {
     assert.ok(await pEpsilon.settled(), 'the bribe has to be settled')
 
     let balB = (await pEpsilon.withdraw(jurorB)).toNumber()
+    let balContract = (await pEpsilon.balance()).toNumber()
     await pEpsilon.withdrawJuror({from: jurorB})
+    assert.equal((await pEpsilon.balance()).toNumber(), balContract - balB, 'The contract balance is not correct')
     assert.equal((await pinakion.balanceOf(jurorB)).toNumber(), balB, 'PNK balance of juror B is wrong')
     assert.equal((await pEpsilon.withdraw(jurorB)).toNumber(), 0, 'bribe contract has not updated juror B balance after withdraw')
 
     let balA = (await pEpsilon.withdraw(jurorA)).toNumber()
     await pEpsilon.withdrawJuror({from: jurorA})
+    assert.equal((await pEpsilon.balance()).toNumber(), balContract - balB - balA, 'The contract balance is not correct')
+    assert.equal((await pinakion.balanceOf(jurorA)).toNumber(), balA, 'PNK balance of juror A is wrong')
+    assert.equal((await pEpsilon.withdraw(jurorA)).toNumber(), 0, 'bribe contract has not updated juror A balance after withdraw')
+  })
+
+  it("should allow anyone to help jurors to withraw balance", async () => {
+    let pinakion = await Pinakion.new(0x0, 0x0, 0, 'Pinakion', 18, 'PNK', true, {from: creator})
+    let rng = await ConstantRandom.new(10, {from: creator})
+    let klerosPOC = await KlerosPOC.new(pinakion.address, rng.address, [0, 0, 0, 0, 0], governor, {from: creator})
+    await pinakion.changeController(klerosPOC.address, {from: creator})
+    await klerosPOC.buyPinakion({from: jurorA, value: 0.4e18})
+    await klerosPOC.activateTokens(0.4e18, {from: jurorA})
+    await klerosPOC.buyPinakion({from: jurorB, value: 0.6e18})
+    await klerosPOC.activateTokens(0.6e18, {from: jurorB})
+    let arbitrableTransaction = await ArbitrableTransaction.new(klerosPOC.address, 0x0, 0, payee, 0x0, {from: payer, value: 0.1e18})
+    let arbitrationFee = await klerosPOC.arbitrationCost(0x0, {from: payer})
+    await arbitrableTransaction.payArbitrationFeeByPartyA({from: payer, value: arbitrationFee})
+    await arbitrableTransaction.payArbitrationFeeByPartyB({from: payee, value: arbitrationFee})
+
+    await klerosPOC.passPeriod({from: other}) // Pass twice to go to vote.
+    await klerosPOC.passPeriod({from: other})
+
+    let drawA = []
+    let drawB = []
+    for (let i = 1; i <= 3; i++) {
+      if (await klerosPOC.isDrawn(0, jurorA, i)) { drawA.push(i) } else { drawB.push(i) }
+    }
+
+    // Attacker needs some PNK
+    await klerosPOC.buyPinakion({from: attacker, value: 2e18})
+    await klerosPOC.withdraw(2e18, {from: attacker})
+
+    // initialize the attack contract opposite to how the judges would vote
+    let desiredOutcome;
+    if (drawA.length > drawB.length) {
+      desiredOutcome = 2 // Winner wil be 1
+    } else {
+      desiredOutcome = 1 // Winner will be 2
+    }
+
+    let epsilon = 1e9
+    let pEpsilon = await PEpsilon.new(pinakion.address, klerosPOC.address, 0, desiredOutcome, epsilon, 5, {from: attacker})
+
+    // Attacker deposits the bribe
+    await pinakion.approveAndCall(pEpsilon.address, 2e18, '', {from: attacker})
+
+    await klerosPOC.voteRuling(0, 1, drawA, {from: jurorA})
+    await klerosPOC.voteRuling(0, 2, drawB, {from: jurorB})
+
+    await klerosPOC.passPeriod({from: other}) // Pass twice to go to execution.
+    await klerosPOC.passPeriod({from: other})
+    await klerosPOC.oneShotTokenRepartition(0, {from: other})
+
+    let stakePerWeight = (await klerosPOC.getStakePerDraw()).toNumber();
+
+    // Attacker settles the bribe
+    await pEpsilon.settle({from: other})
+    assert.ok(await pEpsilon.settled(), 'the bribe has to be settled')
+
+    let balB = (await pEpsilon.withdraw(jurorB)).toNumber()
+    let balContract = (await pEpsilon.balance()).toNumber()
+    await pEpsilon.withdrawSelect(jurorB, {from: other})
+    assert.equal((await pEpsilon.balance()).toNumber(), balContract - balB, 'The contract balance is not correct')
+    assert.equal((await pinakion.balanceOf(jurorB)).toNumber(), balB, 'PNK balance of juror B is wrong')
+    assert.equal((await pEpsilon.withdraw(jurorB)).toNumber(), 0, 'bribe contract has not updated juror B balance after withdraw')
+
+    let balA = (await pEpsilon.withdraw(jurorA)).toNumber()
+    await pEpsilon.withdrawSelect(jurorA, {from: other})
+    assert.equal((await pEpsilon.balance()).toNumber(), balContract - balB - balA, 'The contract balance is not correct')
     assert.equal((await pinakion.balanceOf(jurorA)).toNumber(), balA, 'PNK balance of juror A is wrong')
     assert.equal((await pEpsilon.withdraw(jurorA)).toNumber(), 0, 'bribe contract has not updated juror A balance after withdraw')
   })
