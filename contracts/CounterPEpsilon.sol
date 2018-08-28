@@ -204,6 +204,20 @@ contract CounterPEpsilon {
      require(pinakion.transfer(_juror, amount));
    }
 
+   /** @dev Cancels the juror registration and sends back the money if the session has passed
+    */
+   function withdrawRegistration() public {
+     require(!isOn); // Should not be started
+     require(kleros.session() > session); // If the session has passed
+
+     Juror storage juror = registeredJurors[msg.sender];
+     if(juror.paid){
+       juror.paid = false;
+
+       require(pinakion.transfer(msg.sender, juror.draws * deposit));
+     }
+   }
+
    /* @dev Settles the counter-coordination
     */
    function settle() public {
