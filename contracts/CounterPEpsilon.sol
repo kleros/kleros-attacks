@@ -189,12 +189,19 @@ contract CounterPEpsilon {
 
    /* @dev Juror can withdraw his balance from here
     */
-   function withdrawJuror(){
-     uint amount = withdraw[msg.sender];
-     withdraw[msg.sender] = 0;
+   function withdrawJuror() public{
+     withdrawSelect(msg.sender);
+   }
+
+   /** @dev Withdraw the tokens of a selected address
+    *  @param _juror The withdraw address
+    */
+   function withdrawSelect(address _juror) public {
+     uint amount = withdraw[_juror];
+     withdraw[_juror] = 0;
 
      // The juror receives d + p + e (deposit + p + epsilon)
-     require(pinakion.transfer(msg.sender, amount));
+     require(pinakion.transfer(_juror, amount));
    }
 
    /* @dev Settles the counter-coordination
