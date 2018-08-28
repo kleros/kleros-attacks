@@ -197,10 +197,6 @@ contract CounterPEpsilon {
      require(pinakion.transfer(msg.sender, amount));
    }
 
-   function loadVars() public {
-
-   }
-
    /* @dev Settles the counter-coordination
     */
    function settle() public {
