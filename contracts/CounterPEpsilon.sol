@@ -14,7 +14,6 @@ contract CounterPEpsilon {
   mapping(address => uint) public withdraw; // The amount of money available for withdraw
 
   bool public settled;
-  bool public settleLoaded;
 
   uint public disputeID;
   uint public choiceX; // The choice counter-ccordination targets- the true choice
@@ -180,11 +179,10 @@ contract CounterPEpsilon {
    /* @dev Check if the casted vote is coherent with what was instructed by the CC contract
     * @param _juror The juror address
     * @param _vote The casted vote
-    * @return True if the juror has NOT defected
+    * @return True if the juror has NOT defected, false otherwise
     */
    function isVoteCoherent(address _juror, uint _vote) public view returns(bool) {
-     if(getJurorVote(_juror) == 1 && _vote == choiceX){return true;}
-     return getJurorVote(_juror) == 2 && _vote == choiceY ? true : false;
+     return (getJurorVote(_juror) == 1 && _vote == choiceX) || (getJurorVote(_juror) == 2 && _vote == choiceY);
    }
 
    /* @dev Juror can withdraw his balance from here
@@ -204,9 +202,9 @@ contract CounterPEpsilon {
      require(pinakion.transfer(_juror, amount));
    }
 
-   /** @dev Cancels the juror registration and sends back the money if the session has passed
+   /** @dev Cancels the juror registration and sends him back the deposited money if the session has passed
     */
-   function withdrawRegistration() public {
+   function cancelRegistration() public {
      require(!isOn); // Should not be started
      require(kleros.session() > session); // If the session has passed
 
