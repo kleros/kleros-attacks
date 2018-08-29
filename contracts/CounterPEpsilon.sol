@@ -4,6 +4,12 @@ import "kleros/contracts/Kleros.sol";
 import "kleros-interaction/contracts/standard/rng/RNG.sol";
 import {MiniMeTokenERC20 as Pinakion} from "kleros-interaction/contracts/standard/arbitration/ArbitrableTokens/MiniMeTokenERC20.sol";
 
+/** @title CounterPEpsilon
+ *  @author Daniel Babbev
+ *
+ *  This contract implements a counter coordination game against a P + epsilon attack againg the Kleros court.
+ *  This is an implementation of William George's paper: P + epsilon counter coordination comments.
+ */
 contract CounterPEpsilon {
   Pinakion public pinakion;
   Kleros public kleros;
@@ -24,14 +30,13 @@ contract CounterPEpsilon {
   uint public marginErr;
   uint public marginVictory;
   uint public jurorsDrawn; // The total number of jurors in the case
-  uint public choices; // The coices for the dispute
+  uint public choices; // The choices for the dispute
 
   uint public session; // The session of the dispute
   uint public appeal; // The appeal this contract is coordinating
-  // HACK: Keep this here to avoid "stack too deep"
-  uint public maxAppeal; // After the case is settled save the appeals here
 
   // HACK: Keep these variables here to avoid "stack too deep" error in settle()
+  uint public maxAppeal; // After the case is settled save the appeals here
   uint public votesTotalX; // The # of X votes in the appeal including non-registered
   uint public votesTotalY; // The # of Y votes in the appeal including non-registered
 
@@ -50,13 +55,14 @@ contract CounterPEpsilon {
   modifier onlyDuring(Kleros.Period _period) {require(kleros.period() == _period); _;}
   modifier onlyDuringStartSession() {require(kleros.session() == session); _;}
 
-  event AmountShift(uint val, address juror, uint vote);
+  event Log(string vote);
 
   /* @dev Constructor
    * @param _pinakion Address of PNK
    * @param _kleros Address of Kleros
    * @param _rng Address of RNG
    * @param _disputeID The dispute ID
+   * @param _appeal The appeal we are targeting
    * @param _choiceX The truthful choice
    * @param _choiceY The choice of the attacker
    * @param _deposit The minimum deposit amount for a juror to register
@@ -70,6 +76,7 @@ contract CounterPEpsilon {
     Kleros _kleros,
     RNG _rng,
     uint _disputeID,
+    uint _appeal,
     uint _choiceX,
     uint _choiceY,
     uint _deposit,
@@ -81,6 +88,7 @@ contract CounterPEpsilon {
       kleros = _kleros;
       rng = _rng;
       disputeID = _disputeID;
+      appeal = _appeal;
       choiceX = _choiceX;
       choiceY = _choiceY;
       deposit = _deposit;
@@ -88,9 +96,7 @@ contract CounterPEpsilon {
       epsilon = _epsilon;
       marginErr = _marginErr;
       marginVictory = _marginVictory;
-      session = kleros.session();
-      jurorsDrawn = kleros.amountJurors(disputeID); // Period has to be vote for this to work!!!
-      (, , appeal, choices, , , ,) = kleros.disputes(disputeID); // Get the appeal latest appeal for the dispute
+      session = kleros.session(); // Gets the current session
   }
 
   /** @dev Callback of approveAndCall - transfer pinakions in the contract. Should be called by the pinakion contract. TRUSTED.
@@ -102,6 +108,7 @@ contract CounterPEpsilon {
     onlyBy(pinakion)
     onlyDuring(Kleros.Period.Vote)
     onlyDuringStartSession() {
+      emit Log("ok");
       require(!isOn);
       Juror storage juror = registeredJurors[_from];
       require(_amount >= juror.draws * deposit); // We need at least draws * D in deposit
@@ -136,6 +143,8 @@ contract CounterPEpsilon {
     onlyDuring(Kleros.Period.Vote)
     onlyDuringStartSession() {
       require(!isOn);
+      jurorsDrawn = kleros.amountJurors(disputeID);
+
       // TODO: Round ceil division of odd number
       require(totalVotesPaid >= jurorsDrawn/2 + marginErr); // Begin only if S >= M/2 + E. Else we wait for more jurors
 
@@ -162,8 +171,11 @@ contract CounterPEpsilon {
         // This algorithm will start from a random index in the juror array and it will
         // assign the subsequent [M/2] + F jurors to vote for the desired desired outcome
         // NOTE: There is a bias to the juror selection, as jurors close to each other will get drawn together
-        for (uint i = 0; i < jurorsDrawn/2 + marginVictory; i++){
-          votesNeededX[jurors[randomNumber]] = true;
+        uint xVotes = 0; // Keep the total votes we have assigned to X
+        while(xVotes < jurorsDrawn/2 + marginVictory){ // Once we have enough votes to win the case +marginVictory stop assigning jurors.
+          address juror = jurors[randomNumber];
+          xVotes += registeredJurors[juror].draws;
+          votesNeededX[juror] = true;
           randomNumber = (randomNumber + 1) % jurors.length;
         }
   }
@@ -224,7 +236,7 @@ contract CounterPEpsilon {
 
      settled = true; // Settle the CC
 
-     (, , maxAppeal, , , , ,) = kleros.disputes(disputeID); // Get the appeal latest appeal for the dispute
+     (, , maxAppeal, choices, , , ,) = kleros.disputes(disputeID); // Get the appeal latest appeal for the dispute
 
      // Get the winning choice of the appeal
      uint winningChoice = kleros.getWinningChoice(disputeID, maxAppeal);
